@@ -169,6 +169,19 @@ class PackageState:
         env_args = list(enable_env_set_args)
         for k, v in env_dict.items():
             env_args.extend(['--env-set', f'{k}={v}'])
+
+        # Built-in variables for build.rs and crates generated from rustc cfg
+        # https://doc.rust-lang.org/cargo/reference/environment-variables.html
+        cfgs = rustc.get_cfgs()
+        for cfg in cfgs:
+            if '=' in cfg:
+                k, v = cfg.split('=', maxsplit=1)
+                k = f'CARGO_CFG_{k.upper()}'
+                v = v.strip('"')
+                env_args.extend(['--env-set', f'{k}={v}'])
+            else:
+                env_args.extend(['--env-set', f'CARGO_CFG_{cfg.upper()}=1'])
+
         return env_args
 
     def get_rustc_args(self, environment: Environment, subdir: str, machine: MachineChoice) -> T.List[str]:
